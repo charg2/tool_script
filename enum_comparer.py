@@ -1,3 +1,4 @@
+  
 from os import remove
 import os;
 import copy;
@@ -37,11 +38,17 @@ def find_right( words ):
     if "};" in first_word:
         first_word = first_word.split( "};" )[ 0 ];
 
+
     i = 0;
     for word in words:
+        if "//" == word[:2]:
+            break;
+
         if "=" in word:
             splited_words = word.split( "=" );
             enum_val_word = splited_words[ 1 ];
+
+            print( current_line_num );
 
             if "" == enum_val_word:
                 enum_val_word = words[ i + 1 ]; # Max = 1,
@@ -49,9 +56,11 @@ def find_right( words ):
                 enum_val_word = enum_val_word.split( "//" )[ 0 ];
             if "," in enum_val_word:
                 enum_val_word = enum_val_word.split( "," )[ 0 ];
-
-            current_enum_value = int( enum_val_word );
-            break; # 첫번재 = 외에 주석에 == 이 있는경우 무시
+            if "0x" in enum_val_word:
+                current_enum_value = int( enum_val_word, 0 );
+            else:
+                current_enum_value = int( enum_val_word );
+            
         i += 1;
 
     
