@@ -2,6 +2,8 @@ from os import remove
 import os;
 import copy;
 
+
+
 def find_enum( words ):
     if "enum" in words:
         on_find_enum( words );
@@ -15,39 +17,84 @@ def find_left( words ):
         on_find_left( words );
 
 def find_right( words ):
-    global key;
-    global datas;
+    global current_enum_file_name;
+    global current_enum;
+    global key; # current_enum_name
+    global current_line_num;
+    global current_enum_value;
 
-    if "};" in words:
-        on_find_right( words );
-        return;
+    enum_name = key;
+    name      = "";
+    is_end    = False;
+    has_equal = False;
+
+    # 붙어 있는 경우 ex Max=1,
+    first_word = words[ 0 ];
+
+    if "//" in first_word:
+        first_word = first_word.split( "//" )[ 0 ];
+
+    if "};" in first_word:
+        first_word = first_word.split( "};" )[ 0 ];
+
+    i = 0;
+    for word in words:
+        if "=" in word:
+            splited_words = word.split( "=" );
+            enum_val_word = splited_words[ 1 ];
+
+            if "" == enum_val_word:
+                enum_val_word = words[ i + 1 ]; # Max = 1,
+            if "//" in enum_val_word:
+                enum_val_word = enum_val_word.split( "//" )[ 0 ];
+            if "," in enum_val_word:
+                enum_val_word = enum_val_word.split( "," )[ 0 ];
+
+            current_enum_value = int( enum_val_word );
+        i += 1;
+
     
-    word = words[ 0 ];
-    if "=" in word:
-        word = word.split( "=" )[ 0 ];
-
-    if "," in word:
-        word = word.split( "," )[ 0 ];
-
-    if datas.__contains__( key ) :
-        datas[ key ].add( word );
+    # Max,
+    if "," in first_word:
+        first_word = first_word.split( "," )[ 0 ];
+        name = first_word;
     else:
-        datas[ key ] = { word };
+        name = first_word;
+
+    if "=" in first_word:
+       first_word = first_word.split( "=" )[ 0 ];
+       name = first_word;
+    else:
+        name = first_word;
+
+    if name != "":
+        current_enum[ name ] = { "name" : name, "value" : current_enum_value, "line" : current_line_num };
+        current_enum_value += 1;
+
+    for word in words:
+        if "//" in word:
+            prefix = word.split( "//" )[ 0 ]; # 주석 뒤는 무시
+            if prefix == "":
+                return;
+
+        if "};" in word:
+            is_end = True;
+            on_find_right( words );        
+            return;
+
 
 def on_find_enum( words ):
     for word in words:
-        words.remove( word )
         if word == "enum":
-            return find_class( words ); 
+            return find_class( words[1:] ); 
 
 def on_find_class( words ):
     global key;
     global current_filter;
 
     for word in words:
-        words.remove( word )
         if word == "class":
-            key = words[ 0 ];
+            key = words[ 1 ];
             current_filter = find_left;
 
 def on_find_left( words ):
@@ -56,69 +103,84 @@ def on_find_left( words ):
 
 def on_find_right( words ):
     global current_filter;
+    global current_enum;
+    global key; #current_enum_name
+    global current_enums;
+    global current_enum_value;
 
     current_filter = find_enum;
-
+    current_enums[ key ] = current_enum;
+    
+    current_enum = {};
+    current_enum_value = 0;
 
 
 def display_enum_list_detail() :
-    global datas;
+    global enum_files;
     
-    for data in datas :
+    for data in enum_files :
         print( data );
-        print( datas[ data ] );
+        print( enum_files[ data ] );
     print( "-----------------------------------------" );
 
 def display_enum_list() :
-    global datas;
+    global enum_files;
     
-    for key in datas.keys() :
+    for key in enum_files.keys() :
         print( key );
     print( "-----------------------------------------" );
 
-key = "";
-current_filter = find_enum;
-datas = {};
-file_dict = {};
-file_list = [];
 
 
 def global_display_enum_list_detail():
-    global file_dict;
-    for file_name in file_dict.keys():
-        print( file_name );
-        enums = file_dict[ file_name ];
-        for enum in enums.keys():
-            i = 1;
-            for e in enums[ enum ]:
-                print( str( i ) + " : " + e );
-                i += 1;
+    global enum_file_dict;
+    for enum_file in enum_file_dict.items():
+        #print( enum_file );
+        
+        print( enum_file[0] );
+        print( "-----------------------------------------" );
+        for enum in enum_file[1].items():
+            print( "enum class" + enum[0] );
+            print( "{" );
+            for val in enum[1].items():
+                print( val[1] );
+            print( "};" );
+
+
+        #for enum in enums.keys():
+        #    i = 1;
+        #    for e in enums[ enum ]:
+        #        print( enum + str( i ) + " : " + e );
+        #        i += 1;
 
 def global_display_enum_list():
-    for file_name in file_dict.keys():
+    for file_name in enum_file_dict.keys():
         print( file_name );
         i = 1;
-        for enum in file_dict[ file_name ].keys():
+        for enum in enum_file_dict[ file_name ].keys():
             print( str( i ) + " : " + enum );
             i += 1;
 
-def add_file( name ):
-    global file_list;
-    global file_dict
-    global datas;
 
-    if not file_dict.__contains__( name ):
-        file_dict[ name ] = datas;
-        file_list.append( datas );
+def add_file( name ):
+    global enum_file_list;
+    global enum_file_dict
+    global enum_files;
+    global current_enums;
+
+    if not enum_file_dict.__contains__( name ):
+        enum_file_dict[ name ] = current_enums;
+        enum_file_list.append( current_enums );
     else:
         print( "already exist file" );
     
-    datas = {};
+    current_enums = {};
+    enum_files = {};
 
 
 def display_ui():
     print( "1. new <filename>" );
-    print( "2. copy <new_key> <target>" );
+    print( "2. copy <new_enum_files_name> <target>" );
     print( "3. show" );
     print( "4. sub <left> <right>" );
     print( "5. clear" );
@@ -127,6 +189,11 @@ def input_commands():
     return input().split();
 
 def open_file( file_name ):
+    global current_enum_file_name;
+    global enum_files;
+    
+    current_enum_file_name = file_name;
+
     try:
         file  = open( file_name, mode = 'rt' );
     except FileNotFoundError:
@@ -138,13 +205,17 @@ def open_file( file_name ):
 
 def parse_file( file ):
     global current_filter;
+    global current_line_num;
 
-    lines = file.readlines();
-    
+    lines    = file.readlines();
+
     for line in lines:
+        current_line_num += 1;
+
         s = line.split();
         if len( s ) == 0 :
             continue;
+
         current_filter( s );
 
 def new_file( file_name ):
@@ -159,33 +230,33 @@ def new_files( file_name_list ):
     for file_name in file_name_list:
         new_file( file_name );
 
-def copy_file( new_key, target_key ):
-    global file_dict;
-    global file_list;
+def copy_file( new_enum_files_name, target_key ):
+    global enum_file_dict;
+    global enum_file_list;
 
     #if len( keys ) < 2:
     #    print( "keys size less than 2" );
 
-    #new_key    = keys[0];
+    #new_enum_files_name    = keys[0];
     #target_key = keys[1];
 
-    if file_dict.__contains__( target_key ):
-        file_dict[ new_key ] = copy.deepcopy( file_dict[ target_key ] );
-        file_list.append( file_dict[ new_key ] );
+    if enum_file_dict.__contains__( target_key ):
+        enum_file_dict[ new_enum_files_name ] = copy.deepcopy( enum_file_dict[ target_key ] );
+        enum_file_list.append( enum_file_dict[ new_enum_files_name ] );
     else:
         print( "not exist target_key" );
 
 def sub_file_detail( left, right ):
-    global file_dict;
+    global enum_file_dict;
     
-    if not file_dict.__contains__( left ) :
+    if not enum_file_dict.__contains__( left ) :
         pritn( "not exist left file" );
 
-    if not file_dict.__contains__( right ) :
+    if not enum_file_dict.__contains__( right ) :
         pritn( "not exist right file" );
 
-    l_file = file_dict[ left ];
-    r_file = file_dict[ right ];
+    l_file = enum_file_dict[ left ];
+    r_file = enum_file_dict[ right ];
     for r_key in r_file.keys():
         if l_file.__contains__( r_key ):
             l_file[ r_key ] -= r_file[ r_key ];
@@ -193,31 +264,31 @@ def sub_file_detail( left, right ):
                 del l_file[ r_key ];
 
 def sub_file( left, right ):
-    global file_dict;
+    global enum_file_dict;
     
-    if not file_dict.__contains__( left ) :
+    if not enum_file_dict.__contains__( left ) :
         pritn( "not exist left file" );
 
-    if not file_dict.__contains__( right ) :
+    if not enum_file_dict.__contains__( right ) :
         pritn( "not exist right file" );
 
-    l_file = file_dict[ left ];
-    r_file = file_dict[ right ];
+    l_file = enum_file_dict[ left ];
+    r_file = enum_file_dict[ right ];
     for r_key in r_file.keys():
         if l_file.__contains__( r_key ):
             del l_file[ r_key ];
 
 def delete_file( key ):
-    global file_dict;
-    global file_list;
+    global enum_file_dict;
+    global enum_file_list;
     
-    if not file_dict.__contains__( key ) :
+    if not enum_file_dict.__contains__( key ) :
         pritn( "not exist key file" );
     else:
-        file_list.remove( file_dict[ key ] );
-        del file_dict[ key ];
+        enum_file_list.remove( enum_file_dict[ key ] );
+        del enum_file_dict[ key ];
 
-def delete_file_list( keys ):
+def delete_enum_file_list( keys ):
     for key in keys:
         delete_file( key );
 
@@ -232,7 +303,7 @@ def execute( cmds ):
     elif cmds[ 0 ] == "delete":
         delete_file( cmds[ 1 ] );
     elif cmds[ 0 ] == "delete_list":
-        delete_file_list( cmds[ 1: ] );
+        delete_enum_file_list( cmds[ 1: ] );
     elif cmds[ 0 ] == "copy":
         copy_file( cmds[ 1 ], cmds[2] );
     elif cmds[ 0 ] == "sub":
@@ -251,15 +322,29 @@ def initiliaze():
     cmds_executor[ "clear"       ] = lambda : os.system('cls');
     cmds_executor[ "copy"        ] = copy_file;
     cmds_executor[ "delete"      ] = delete_file;
-    cmds_executor[ "delete_list" ] = delete_file_list;
+    cmds_executor[ "delete_list" ] = delete_enum_file_list;
     cmds_executor[ "new"         ] = new_file;
-    cmds_executor[ "new_list"    ] = new_file_list;
+    cmds_executor[ "new_list"    ] = new_enum_file_list;
     cmds_executor[ "show"        ] = global_display_enum_list;
     cmds_executor[ "show_detail" ] = global_display_enum_list_detail;
     cmds_executor[ "sub"         ] = sub_file;
     cmds_executor[ "sub_detail"  ] = sub_file_detail;
 
     return cmds_executor;
+
+
+current_enum_file_name  = "";
+current_enum            = {}; # 현재 파시중인 enum
+current_enums           = {}; # 현재 파시중인 enums
+current_enum_value      = 0;
+
+current_filter          = find_enum;
+current_line_num        = 0;
+
+enum_files              = {};
+enum_file_dict          = {};
+enum_file_list          = [];
+key                     = "";
 
 def main():
     while True:
