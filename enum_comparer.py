@@ -167,6 +167,7 @@ def add_file( name ):
     global enum_file_dict
     global enum_files;
     global current_enums;
+    global current_line_num;
 
     if not enum_file_dict.__contains__( name ):
         enum_file_dict[ name ] = current_enums;
@@ -174,8 +175,10 @@ def add_file( name ):
     else:
         print( "already exist file" );
     
-    current_enums = {};
-    enum_files = {};
+    current_enums       = {};
+    current_line_num    = 0;
+    enum_files          = {};
+    
 
 
 def display_ui():
@@ -184,6 +187,7 @@ def display_ui():
     print( "3. show" );
     print( "4. sub <left> <right>" );
     print( "5. clear" );
+    print( "6. mark <file_name>" );
 
 def input_commands():
     return input().split();
@@ -268,7 +272,6 @@ def sub_file_detail( left, right ):
                     if l_enum[ r_enum_val[0] ][ "name" ] == r_enum_val[ 1 ][ "name" ]:
                         if l_enum[ r_enum_val[0] ][ "value" ] == r_enum_val[ 1 ][ "value" ]:
                             del l_enum[ r_enum_val[0] ];
-
             #if len( l_file[ r_key ] ) == 0:
             #    del l_file[ r_key ];
 
@@ -301,6 +304,43 @@ def delete_enum_file_list( keys ):
     for key in keys:
         delete_file( key );
 
+def mark_enum_value_in_memory( enum_file_name ):
+    global enum_file_dict;
+
+    read_file  = open( enum_file_name, mode = 'rt' );
+    if not read_file:
+        return;
+
+    if not enum_file_dict.__contains__( enum_file_name ):
+        print( "파일 음슴" );
+        return;
+
+    lines    = read_file.readlines();
+    read_file.close();
+
+
+    enum_file = enum_file_dict[ enum_file_name ];
+    for enum in enum_file.items():
+        for line_info in enum[ 1 ].values():
+            line = line_info[ "line" ];
+            print( line );
+            lines[ line -1 ] = diff_marker + lines[ line -1 ];
+
+    w_file  = open( enum_file_name, mode = 'wt' );
+    if not w_file:
+        return;
+
+    w_file.writelines( lines );
+    
+
+
+
+
+
+def over_wirte_file():
+    pass;
+
+
 def execute( cmds ):
     if len( cmds ) == 0:
         return;
@@ -325,6 +365,8 @@ def execute( cmds ):
         global_display_enum_list_detail();
     elif cmds[ 0 ] == "clear":
         os.system('cls');
+    elif cmds[ 0 ] == "mark":
+        mark_enum_value_in_memory( cmds[1] );
 
 def initiliaze():
     cmds_executor = {};    
@@ -355,7 +397,7 @@ enum_file_dict          = {};
 enum_file_list          = [];
 key                     = "";
 
-confilct_keyword        = "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
+diff_marker             = "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
 
 def main():
     while True:
