@@ -250,18 +250,27 @@ def sub_file_detail( left, right ):
     global enum_file_dict;
     
     if not enum_file_dict.__contains__( left ) :
-        pritn( "not exist left file" );
+        print( "not exist left file" );
 
     if not enum_file_dict.__contains__( right ) :
-        pritn( "not exist right file" );
+        print( "not exist right file" );
 
-    l_file = enum_file_dict[ left ];
-    r_file = enum_file_dict[ right ];
+    l_file = enum_file_dict[ left  ]; #l enums
+    r_file = enum_file_dict[ right ]; #r enums
+    
     for r_key in r_file.keys():
-        if l_file.__contains__( r_key ):
-            l_file[ r_key ] -= r_file[ r_key ];
-            if len( l_file[ r_key ] ) == 0:
-                del l_file[ r_key ];
+        if l_file.__contains__( r_key ): #해당 에넘이 있으면
+            l_enum = l_file[ r_key ];
+            r_enum = r_file[ r_key ];
+
+            for r_enum_val in r_enum.items():
+                if l_enum.__contains__( r_enum_val[0] ):
+                    if l_enum[ r_enum_val[0] ][ "name" ] == r_enum_val[ 1 ][ "name" ]:
+                        if l_enum[ r_enum_val[0] ][ "value" ] == r_enum_val[ 1 ][ "value" ]:
+                            del l_enum[ r_enum_val[0] ];
+
+            #if len( l_file[ r_key ] ) == 0:
+            #    del l_file[ r_key ];
 
 def sub_file( left, right ):
     global enum_file_dict;
@@ -345,6 +354,8 @@ enum_files              = {};
 enum_file_dict          = {};
 enum_file_list          = [];
 key                     = "";
+
+confilct_keyword        = "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
 
 def main():
     while True:
