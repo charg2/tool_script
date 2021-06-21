@@ -51,6 +51,7 @@ def find_right( words ):
                 enum_val_word = enum_val_word.split( "," )[ 0 ];
 
             current_enum_value = int( enum_val_word );
+            break; # 첫번재 = 외에 주석에 == 이 있는경우 무시
         i += 1;
 
     
