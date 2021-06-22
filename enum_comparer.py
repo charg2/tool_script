@@ -48,8 +48,6 @@ def find_right( words ):
             splited_words = word.split( "=" );
             enum_val_word = splited_words[ 1 ];
 
-            print( current_line_num );
-
             if "" == enum_val_word:
                 enum_val_word = words[ i + 1 ]; # Max = 1,
             if "//" in enum_val_word:
@@ -150,10 +148,10 @@ def global_display_enum_list_detail():
         print( enum_file[0] );
         print( "-----------------------------------------" );
         for enum in enum_file[1].items():
-            print( "enum class" + enum[0] );
+            print( f'enum class {enum[0]}' );
             print( "{" );
             for val in enum[1].items():
-                print( val[1] );
+                print( f'{val[1]["name"]} = {val[1]["value"]}' );
             print( "};" );
 
 
@@ -282,17 +280,19 @@ def sub_file_detail( left, right ):
                     if l_enum[ r_enum_val[0] ][ "name" ] == r_enum_val[ 1 ][ "name" ]:
                         if l_enum[ r_enum_val[0] ][ "value" ] == r_enum_val[ 1 ][ "value" ]:
                             del l_enum[ r_enum_val[0] ];
-            #if len( l_file[ r_key ] ) == 0:
-            #    del l_file[ r_key ];
+
+            if len( l_enum ) == 0:
+                del l_file[ r_key ];
+            
 
 def sub_file( left, right ):
     global enum_file_dict;
     
     if not enum_file_dict.__contains__( left ) :
-        pritn( "not exist left file" );
+        print( "not exist left file" );
 
     if not enum_file_dict.__contains__( right ) :
-        pritn( "not exist right file" );
+        print( "not exist right file" );
 
     l_file = enum_file_dict[ left ];
     r_file = enum_file_dict[ right ];
@@ -305,7 +305,7 @@ def delete_file( key ):
     global enum_file_list;
     
     if not enum_file_dict.__contains__( key ) :
-        pritn( "not exist key file" );
+        print( "not exist key file" );
     else:
         enum_file_list.remove( enum_file_dict[ key ] );
         del enum_file_dict[ key ];
@@ -333,7 +333,6 @@ def mark_enum_value_in_memory( enum_file_name ):
     for enum in enum_file.items():
         for line_info in enum[ 1 ].values():
             line = line_info[ "line" ];
-            print( line );
             lines[ line -1 ] = diff_marker + lines[ line -1 ];
 
     w_file  = open( enum_file_name, mode = 'wt' );
