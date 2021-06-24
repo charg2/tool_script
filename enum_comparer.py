@@ -1,4 +1,3 @@
-  
 from os import remove
 import os;
 import copy;
@@ -76,7 +75,7 @@ def find_right( words ):
         name = first_word;
 
     if name != "":
-        current_enum[ name ] = { "name" : name, "value" : current_enum_value, "line" : current_line_num };
+        current_enum[ name ] = { "name" : name, "value" : current_enum_value, "line" : current_line_num, "diff" : False };
         current_enum_value += 1;
 
     for word in words:
@@ -155,6 +154,41 @@ def global_display_enum_list_detail():
             print( "};" );
 
 
+def global_display_enum_list_detail_lv1():
+    global enum_file_dict;
+    for enum_file in enum_file_dict.items():
+        
+        print( enum_file[0] );
+        print( "-----------------------------------------" );
+        for enum in enum_file[1].items():
+            if len( enum[1].items() ) == 0:
+                   continue;
+
+            print( f'enum class {enum[0]}' );
+            print( "{" );
+            for val in enum[1].items():
+                if True == val[1]["diff"]:
+                    print( f'{val[1]["name"]} = {val[1]["value"]}' );
+            print( "};" );
+
+def global_display_enum_list_detail_lv2():
+    global enum_file_dict;
+    for enum_file in enum_file_dict.items():
+        
+        print( enum_file[0] );
+        print( "-----------------------------------------" );
+        for enum in enum_file[1].items():
+            if len( enum[1].items() ) == 0:
+                   continue;
+
+            print( f'enum class {enum[0]}' );
+            print( "{" );
+            for val in enum[1].items():
+                if False == val[1]["diff"]:
+                    print( f'{val[1]["name"]} = {val[1]["value"]}' );
+            print( "};" );
+
+
         #for enum in enums.keys():
         #    i = 1;
         #    for e in enums[ enum ]:
@@ -196,6 +230,7 @@ def display_ui():
     print( "4. sub <left> <right>" );
     print( "5. clear" );
     print( "6. mark <file_name>" );
+    print( "6. delete <file_name>" );
 
 def input_commands():
     return input().split();
@@ -278,12 +313,38 @@ def sub_file_detail( left, right ):
             for r_enum_val in r_enum.items():
                 if l_enum.__contains__( r_enum_val[0] ):
                     if l_enum[ r_enum_val[0] ][ "name" ] == r_enum_val[ 1 ][ "name" ]:
+                        l_enum[ r_enum_val[0] ][ "diff" ] = True;
                         if l_enum[ r_enum_val[0] ][ "value" ] == r_enum_val[ 1 ][ "value" ]:
                             del l_enum[ r_enum_val[0] ];
 
             if len( l_enum ) == 0:
                 del l_file[ r_key ];
-            
+
+def sub_file_detail_no_check( left, right ):
+    global enum_file_dict;
+    
+    if not enum_file_dict.__contains__( left ) :
+        print( "not exist left file" );
+
+    if not enum_file_dict.__contains__( right ) :
+        print( "not exist right file" );
+
+    l_file = enum_file_dict[ left  ]; #l enums
+    r_file = enum_file_dict[ right ]; #r enums
+    
+    for r_key in r_file.keys():
+        if l_file.__contains__( r_key ): #해당 에넘이 있으면
+            l_enum = l_file[ r_key ];
+            r_enum = r_file[ r_key ];
+
+            for r_enum_val in r_enum.items():
+                if l_enum.__contains__( r_enum_val[0] ):
+                    if l_enum[ r_enum_val[0] ][ "name" ] == r_enum_val[ 1 ][ "name" ]:
+                        if l_enum[ r_enum_val[0] ][ "value" ] == r_enum_val[ 1 ][ "value" ]:
+                            del l_enum[ r_enum_val[0] ];
+
+            if len( l_enum ) == 0:
+                del l_file[ r_key ];
 
 def sub_file( left, right ):
     global enum_file_dict;
@@ -333,7 +394,11 @@ def mark_enum_value_in_memory( enum_file_name ):
     for enum in enum_file.items():
         for line_info in enum[ 1 ].values():
             line = line_info[ "line" ];
-            lines[ line -1 ] = diff_marker + lines[ line -1 ];
+            diff = line_info[ "diff" ];
+            if diff is True:
+                lines[ line -1 ] = diff_marker_lv1 + lines[ line -1 ];
+            else: 
+                lines[ line -1 ] = diff_marker_lv2 + lines[ line -1 ];
 
     w_file  = open( enum_file_name, mode = 'wt' );
     if not w_file:
@@ -368,10 +433,16 @@ def execute( cmds ):
         sub_file( cmds[1], cmds[2] );
     elif cmds[ 0 ] == "sub_detail":
         sub_file_detail( cmds[1], cmds[2] );
+    elif cmds[ 0 ] == "sub_detail1":
+        sub_file_detail_no_check( cmds[1], cmds[2] );
     elif cmds[ 0 ] == "show":
         global_display_enum_list();
     elif cmds[ 0 ] == "show_detail":
         global_display_enum_list_detail();
+    elif cmds[ 0 ] == "show_detail_lv1":
+        global_display_enum_list_detail_lv1();
+    elif cmds[ 0 ] == "show_detail_lv2":
+        global_display_enum_list_detail_lv2();
     elif cmds[ 0 ] == "clear":
         os.system('cls');
     elif cmds[ 0 ] == "mark":
@@ -394,8 +465,8 @@ def initiliaze():
 
 
 current_enum_file_name  = "";
-current_enum            = {}; # 현재 파시중인 enum
-current_enums           = {}; # 현재 파시중인 enums
+current_enum            = {}; # 현재 파싱중인 enum
+current_enums           = {}; # 현재 파싱중인 enums
 current_enum_value      = 0;
 
 current_filter          = find_enum;
@@ -406,7 +477,8 @@ enum_file_dict          = {};
 enum_file_list          = [];
 key                     = "";
 
-diff_marker             = "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<";
+diff_marker_lv1         = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"; # 값만 다름
+diff_marker_lv2         = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"; # 아예 없음
 
 def main():
     while True:
